@@ -1,4 +1,5 @@
 import platform
+import sys
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
@@ -7,8 +8,20 @@ from field import FieldType
 from table import MysqlTable
 from version import VERSION
 
-# 模板目录：项目根目录下的 templates/
-TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+def template_dir() -> Path:
+    """模板目录。
+
+    PyInstaller 打包后模板被解包到 sys._MEIPASS（onefile 为临时目录，onedir 为 _internal/），
+    未打包时则是项目根目录下的 templates/。
+    """
+    base = getattr(sys, "_MEIPASS", None)
+    if base is not None:
+        return Path(base) / "templates"
+    return Path(__file__).resolve().parent.parent / "templates"
+
+
+TEMPLATE_DIR = template_dir()
 
 # FieldType 到 C++ 成员类型的映射。
 CPP_TYPE_MAP = {
