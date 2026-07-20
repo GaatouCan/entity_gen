@@ -1,9 +1,11 @@
+import platform
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
 from field import FieldType
 from table import MysqlTable
+from version import VERSION
 
 # 模板目录：项目根目录下的 templates/
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -96,6 +98,8 @@ def build_cpp_context(table: MysqlTable, group_name: str) -> dict:
         "group_name": group_name,
         "fields": fields,
         "key_queries": key_queries,
+        "python_version": platform.python_version(),
+        "script_version": VERSION,
     }
 
 

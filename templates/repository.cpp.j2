@@ -9,132 +9,129 @@
   渲染选项: trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=True
 #}
 {% macro read_rows() %}
-                for (auto row : res->fetchAll()) {
-                    Entity_{{ class_name }} elem;
+            for (auto row : res->fetchAll()) {
+                Entity_{{ class_name }} elem;
 {% for f in fields %}
 {% if f.is_json %}
-                    elem.{{ f.name }} = nlohmann::json::parse(row[{{ loop.index0 }}].get<std::string>());
+                elem.{{ f.name }} = nlohmann::json::parse(row[{{ loop.index0 }}].get<std::string>());
 {% else %}
-                    elem.{{ f.name }} = row[{{ loop.index0 }}].get<{{ f.row_get_type }}>();
+                elem.{{ f.name }} = row[{{ loop.index0 }}].get<{{ f.row_get_type }}>();
 {% endif %}
 {% endfor %}
-                    result->emplace_back(elem);
-                }
+                result->emplace_back(elem);
+            }
 {%- endmacro %}
 #include "Repository_{{ class_name }}.h"
 #include "module/database/mysql/MysqlDatabaseManager.h"
 
 #include <spdlog/spdlog.h>
 
-namespace orm::{{ group_name }} {
+using std::optional;
 
-    using std::optional;
+Repository_{{ class_name }}::Repository_{{ class_name }}(DatabaseAdapter *module)
+    : MysqlRepository(module) {
+}
 
-    Repository_{{ class_name }}::Repository_{{ class_name }}(DatabaseAdapter *module)
-        : MysqlRepository(module) {
-    }
+Repository_{{ class_name }}::~Repository_{{ class_name }}() {
+}
 
-    Repository_{{ class_name }}::~Repository_{{ class_name }}() {
-    }
-
-    void Repository_{{ class_name }}::query(EntityCallback func) const {
-        getMysqlDatabaseManager().query(table(), "", [func = std::move(func)](optional<mysqlx::RowResult> res) mutable {
-            if (res.has_value()) {
-                auto result = make_shared<vector<Entity_{{ class_name }}>>();
+void Repository_{{ class_name }}::query(EntityCallback func) const {
+    getMysqlDatabaseManager().query(table(), "", [func = std::move(func)](optional<mysqlx::RowResult> res) mutable {
+        if (res.has_value()) {
+            auto result = make_shared<vector<Entity_{{ class_name }}>>();
 {{ read_rows() }}
-                std::invoke(func, std::move(result));
-                return;
-            }
+            std::invoke(func, std::move(result));
+            return;
+        }
 
-            return std::invoke(func, nullptr);
-        });
-    }
+        return std::invoke(func, nullptr);
+    });
+}
 
-    void Repository_{{ class_name }}::query(const std::string &cond, EntityCallback func) const {
-        getMysqlDatabaseManager().query(table(), cond, [func = std::move(func)](optional<mysqlx::RowResult> res) mutable {
-            if (res.has_value()) {
-                auto result = make_shared<vector<Entity_{{ class_name }}>>();
+void Repository_{{ class_name }}::query(const std::string &cond, EntityCallback func) const {
+    getMysqlDatabaseManager().query(table(), cond, [func = std::move(func)](optional<mysqlx::RowResult> res) mutable {
+        if (res.has_value()) {
+            auto result = make_shared<vector<Entity_{{ class_name }}>>();
 {{ read_rows() }}
-                std::invoke(func, std::move(result));
-                return;
-            }
+            std::invoke(func, std::move(result));
+            return;
+        }
 
-            return std::invoke(func, nullptr);
-        });
-    }
+        return std::invoke(func, nullptr);
+    });
+}
 
 {% for q in key_queries %}
-    void Repository_{{ class_name }}::queryBy{{ q.method_suffix }}({% for p in q.params %}{{ p.param_type }} {{ p.name }}, {% endfor %}EntityCallback func) const {
-        this->query(fmt::format("{% for p in q.params %}{{ p.name }} = {{ "'{}'" if p.is_string else "{}" }}{{ ' AND ' if not loop.last }}{% endfor %}", {% for p in q.params %}{{ p.name }}{{ ', ' if not loop.last }}{% endfor %}), std::move(func));
-    }
+void Repository_{{ class_name }}::queryBy{{ q.method_suffix }}({% for p in q.params %}{{ p.param_type }} {{ p.name }}, {% endfor %}EntityCallback func) const {
+    this->query(fmt::format("{% for p in q.params %}{{ p.name }} = {{ "'{}'" if p.is_string else "{}" }}{{ ' AND ' if not loop.last }}{% endfor %}", {% for p in q.params %}{{ p.name }}{{ ', ' if not loop.last }}{% endfor %}), std::move(func));
+}
 
 {% endfor %}
-    void Repository_{{ class_name }}::insert(vector<Entity_{{ class_name }}> &&entities) const {
-        getMysqlDatabaseManager().workWithTable(table(), [list = std::move(entities)](optional<mysqlx::Table> t) {
-            if (t.has_value()) {
-                for (const auto &elem : list) {
-                    try {
-                        t.value()
-                            .insert()
-                            .values({% for f in fields %}elem.{{ f.name }}{{ '.dump()' if f.is_json }}{{ ', ' if not loop.last }}{% endfor %})
-                            .execute();
-                    } catch (const mysqlx::Error &err) {
-                        SPDLOG_ERROR("operate table failed: {}", err.what());
-                    }
-                }
-            }
-        });
-    }
-
-    void Repository_{{ class_name }}::update(vector<Entity_{{ class_name }}> &&entities) const {
-        getMysqlDatabaseManager().workWithTable(table(), [list = std::move(entities)](optional<mysqlx::Table> t) {
-            if (t.has_value()) {
-                for (const auto &elem : list) {
-                    t.value()
-                        .update()
-{% for f in fields | rejectattr('is_key') %}
-                        .set("{{ f.name }}", elem.{{ f.name }}{{ '.dump()' if f.is_json }})
-{% endfor %}
-                        .where("{% for kf in fields | selectattr('is_key') %}{{ kf.name }} = :{{ kf.name }}{{ ' AND ' if not loop.last }}{% endfor %}")
-{% for kf in fields | selectattr('is_key') %}
-                        .bind("{{ kf.name }}", elem.{{ kf.name }})
-{% endfor %}
-                        .execute();
-                }
-            }
-        });
-    }
-
-    void Repository_{{ class_name }}::replace(vector<Entity_{{ class_name }}> &&entities) const {
-        getMysqlDatabaseManager().workWithSession([list = std::move(entities)](mysqlx::Session &sess) {
+void Repository_{{ class_name }}::insert(vector<Entity_{{ class_name }}> &&entities) const {
+    getMysqlDatabaseManager().workWithTable(table(), [list = std::move(entities)](optional<mysqlx::Table> t) {
+        if (t.has_value()) {
             for (const auto &elem : list) {
-                sess.sql(R"(INSERT INTO {{ table_name }} ({% for f in fields %}{{ f.name }}{{ ', ' if not loop.last }}{% endfor %})
-                        VALUES ({% for f in fields %}?{{ ', ' if not loop.last }}{% endfor %})
-                        ON DUPLICATE KEY UPDATE
-{% for f in fields | rejectattr('is_key') %}
-                            {{ f.name }} = VALUES({{ f.name }}){{ ',' if not loop.last }}
-{% endfor %}
-                        )")
-                        .bind({% for f in fields %}elem.{{ f.name }}{{ '.dump()' if f.is_json }}{{ ', ' if not loop.last }}{% endfor %})
+                try {
+                    t.value()
+                        .insert()
+                        .values({% for f in fields %}elem.{{ f.name }}{{ '.dump()' if f.is_json }}{{ ', ' if not loop.last }}{% endfor %})
                         .execute();
+                } catch (const mysqlx::Error &err) {
+                    SPDLOG_ERROR("operate table failed: {}", err.what());
+                }
             }
-        });
-    }
+        }
+    });
+}
 
-    void Repository_{{ class_name }}::remove(const std::string &cond) const {
-        getMysqlDatabaseManager().workWithTable(table(), [cond = cond](optional<mysqlx::Table> t) {
-            if (t.has_value()) {
+void Repository_{{ class_name }}::update(vector<Entity_{{ class_name }}> &&entities) const {
+    getMysqlDatabaseManager().workWithTable(table(), [list = std::move(entities)](optional<mysqlx::Table> t) {
+        if (t.has_value()) {
+            for (const auto &elem : list) {
                 t.value()
-                    .remove()
-                    .where(cond)
+                    .update()
+{% for f in fields | rejectattr('is_key') %}
+                    .set("{{ f.name }}", elem.{{ f.name }}{{ '.dump()' if f.is_json }})
+{% endfor %}
+                    .where("{% for kf in fields | selectattr('is_key') %}{{ kf.name }} = :{{ kf.name }}{{ ' AND ' if not loop.last }}{% endfor %}")
+{% for kf in fields | selectattr('is_key') %}
+                    .bind("{{ kf.name }}", elem.{{ kf.name }})
+{% endfor %}
                     .execute();
             }
-        });
-    }
+        }
+    });
+}
+
+void Repository_{{ class_name }}::replace(vector<Entity_{{ class_name }}> &&entities) const {
+    getMysqlDatabaseManager().workWithSession([list = std::move(entities)](mysqlx::Session &sess) {
+        for (const auto &elem : list) {
+            sess.sql(R"(INSERT INTO {{ table_name }} ({% for f in fields %}{{ f.name }}{{ ', ' if not loop.last }}{% endfor %})
+                    VALUES ({% for f in fields %}?{{ ', ' if not loop.last }}{% endfor %})
+                    ON DUPLICATE KEY UPDATE
+{% for f in fields | rejectattr('is_key') %}
+                        {{ f.name }} = VALUES({{ f.name }}){{ ',' if not loop.last }}
+{% endfor %}
+                    )")
+                    .bind({% for f in fields %}elem.{{ f.name }}{{ '.dump()' if f.is_json }}{{ ', ' if not loop.last }}{% endfor %})
+                    .execute();
+        }
+    });
+}
+
+void Repository_{{ class_name }}::remove(const std::string &cond) const {
+    getMysqlDatabaseManager().workWithTable(table(), [cond = cond](optional<mysqlx::Table> t) {
+        if (t.has_value()) {
+            t.value()
+                .remove()
+                .where(cond)
+                .execute();
+        }
+    });
+}
 {% for q in key_queries %}
 
-    void Repository_{{ class_name }}::removeBy{{ q.method_suffix }}({% for p in q.params %}{{ p.param_type }} {{ p.name }}{{ ', ' if not loop.last }}{% endfor %}) const {
-        this->remove(fmt::format("{% for p in q.params %}{{ p.name }} = {{ "'{}'" if p.is_string else "{}" }}{{ ' AND ' if not loop.last }}{% endfor %}", {% for p in q.params %}{{ p.name }}{{ ', ' if not loop.last }}{% endfor %}));
-    }
+void Repository_{{ class_name }}::removeBy{{ q.method_suffix }}({% for p in q.params %}{{ p.param_type }} {{ p.name }}{{ ', ' if not loop.last }}{% endfor %}) const {
+    this->remove(fmt::format("{% for p in q.params %}{{ p.name }} = {{ "'{}'" if p.is_string else "{}" }}{{ ' AND ' if not loop.last }}{% endfor %}", {% for p in q.params %}{{ p.name }}{{ ', ' if not loop.last }}{% endfor %}));
+}
 {% endfor %}
-} // orm::{{ group_name }}
