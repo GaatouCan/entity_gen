@@ -1,0 +1,76 @@
+[
+    {
+        "table_name": "player",
+        "comment": "玩家数据",
+        "columns": [
+            {
+                "column_name": "player_id",
+                "type": "uint64",
+                "nullable": false,
+                "private_key": true,
+                "comment": "玩家ID"
+            },
+            {
+                "column_name": "name",
+                "type": "string",
+                "nullable": false,
+                "comment": "玩家名"
+            },
+            {
+                "column_name": "common_data",
+                "type": "json",
+                "comment": "通用数据"
+            },
+            {
+                "column_name": "created_time",
+                "type": "uint64",
+                "nullable": false,
+                "comment": "创号时间"
+            },
+            {
+                "column_name": "updated_time",
+                "type": "uint64",
+                "nullable": false,
+                "comment": "更新时间"
+            }
+        ]
+    },
+    {
+        "table_name": "offline_entry",
+        "comment": "玩家离线数据",
+        "columns": [
+            {
+                "column_name": "player_id",
+                "type": "uint64",
+                "nullable": false,
+                "private_key": true,
+                "comment": "玩家ID"
+            },
+            {
+                "column_name": "entry_type",
+                "type": "int32",
+                "nullable": false,
+                "private_key": true,
+                "comment": "离线数据类型"
+            },
+            {
+                "column_name": "entry_id",
+                "type": "uint64",
+                "nullable": false,
+                "private_key": true,
+                "comment": "数据ID"
+            },
+            {
+                "column_name": "update_time",
+                "type": "int64",
+                "nullable": false,
+                "comment": "更新时间"
+            },
+            {
+                "column_name": "entry_data",
+                "type": "json",
+                "comment": "离线数据"
+            }
+        ]
+    }
+]

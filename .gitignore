@@ -1,0 +1,66 @@
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+Lib/
+Scripts/
+env.bak/
+venv.bak/
+
+# Python 编译/缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 分发/打包相关
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# 单元测试 / 覆盖率报告
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# PEP 582
+__pypackages__/
+
+# 环境变量文件（含敏感信息）
+.env
+.env.local
+.env.*.local
+pyvenv.cfg
+
+# IDE / 编辑器配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db

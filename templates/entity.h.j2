@@ -1,0 +1,26 @@
+{#
+  实体类头文件模板 (Entity_<Class>.h)。
+  上下文:
+    class_name -- 表名的 PascalCase, 如 "Player"
+    fields     -- 字段列表, 每项: name, cpp_type, default_value, comment, is_json
+  渲染选项: trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=True
+#}
+#pragma once
+
+#include <http/runtime/dataabase/Entity.h>
+{% if fields | selectattr('is_json') | list %}
+
+#include <nlohmann/json.hpp>
+{% endif %}
+
+namespace orm::{{ group_name }} {
+
+    using uranus::http::runtime::database::Entity;
+
+    class Entity_{{ class_name }} final : public Entity {
+    public:
+{% for f in fields %}
+        {{ f.cpp_type }} {{ f.name }}{{ f.default_value }};{{ (' // ' ~ f.comment) if f.comment }}
+{% endfor %}
+    };
+} // orm::{{ group_name }}
