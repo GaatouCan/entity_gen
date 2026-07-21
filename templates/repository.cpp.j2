@@ -28,8 +28,8 @@
 
 using std::optional;
 
-Repository_{{ class_name }}::Repository_{{ class_name }}(DatabaseAdapter *module)
-    : MysqlRepository(module) {
+Repository_{{ class_name }}::Repository_{{ class_name }}(DatabaseAdapter &mgr)
+    : MysqlRepository(mgr) {
 }
 
 Repository_{{ class_name }}::~Repository_{{ class_name }}() {
