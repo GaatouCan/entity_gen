@@ -26,7 +26,10 @@
 using uranus::actor::runtime::database::Entity;
 
 class Entity_{{ class_name }} final : public Entity {
+
 public:
+    DataAsset *clone() override { return new Entity_{{ class_name }}(*this); }
+
 {% for f in fields %}
     {{ f.cpp_type }} {{ f.name }}{{ f.default_value }};{{ (' // ' ~ f.comment) if f.comment }}
 {% endfor %}
