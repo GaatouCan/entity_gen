@@ -17,13 +17,13 @@
  * Script version: v{{ script_version }}
  */
 
-#include <http/runtime/dataabase/Entity.h>
+#include <actor/runtime/database/Entity.h>
 {% if fields | selectattr('is_json') | list %}
 
 #include <nlohmann/json.hpp>
 {% endif %}
 
-using uranus::http::runtime::database::Entity;
+using uranus::actor::runtime::database::Entity;
 
 class Entity_{{ class_name }} final : public Entity {
 public:
